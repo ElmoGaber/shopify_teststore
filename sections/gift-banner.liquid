@@ -1,0 +1,380 @@
+{% liquid
+  assign fetch_priority = 'auto'
+  if section.index == 1
+    assign fetch_priority = 'high'
+  endif
+
+  assign section_label = section.settings.heading | default: section.settings.top_text | default: shop.name
+
+  assign has_background_image = false
+  if section.settings.background_image != blank
+    assign has_background_image = true
+  endif
+
+  assign has_logo = false
+  if section.settings.logo != blank
+    assign has_logo = true
+  endif
+%}
+
+<section
+  class="gift-banner{% if has_background_image %} gift-banner--has-image{% endif %}"
+  aria-label="{{ section_label | escape }}"
+>
+  <div class="gift-banner__media" aria-hidden="true">
+    {% if has_background_image %}
+      {{
+        section.settings.background_image
+        | image_url: width: 3000
+        | image_tag:
+          widths: '750, 1100, 1500, 2000, 2600, 3000',
+          sizes: '100vw',
+          class: 'gift-banner__background',
+          alt: '',
+          loading: 'eager',
+          fetchpriority: fetch_priority
+      }}
+    {% endif %}
+    <div class="gift-banner__overlay"></div>
+  </div>
+
+  <div class="gift-banner__inner page-width">
+    <div class="gift-banner__content">
+      {% if has_logo %}
+        <div class="gift-banner__logo-wrap">
+          {{
+            section.settings.logo
+            | image_url: width: 420
+            | image_tag:
+              widths: '120, 160, 220, 280, 360, 420',
+              sizes: '(min-width: 750px) 240px, 160px',
+              class: 'gift-banner__logo',
+              alt: section.settings.logo.alt | default: shop.name | escape,
+              loading: 'eager',
+              fetchpriority: fetch_priority
+          }}
+        </div>
+      {% endif %}
+
+      {% if section.settings.top_text != blank %}
+        <p class="gift-banner__eyebrow">{{ section.settings.top_text | escape }}</p>
+      {% endif %}
+
+      {% if section.settings.top_button_label != blank and section.settings.top_button_link != blank %}
+        <a class="gift-banner__button gift-banner__button--top" href="{{ section.settings.top_button_link }}">
+          <span>{{ section.settings.top_button_label | escape }}</span>
+          <span class="gift-banner__button-icon" aria-hidden="true">→</span>
+        </a>
+      {% endif %}
+
+      {% if section.settings.heading != blank %}
+        <h1 class="gift-banner__heading">{{ section.settings.heading | escape }}</h1>
+      {% endif %}
+
+      {% if section.settings.description != blank %}
+        <div class="gift-banner__description rte">
+          {{ section.settings.description }}
+        </div>
+      {% endif %}
+
+      {% if section.settings.shop_button_label != blank and section.settings.shop_button_link != blank %}
+        <a class="gift-banner__button gift-banner__button--primary" href="{{ section.settings.shop_button_link }}">
+          <span>{{ section.settings.shop_button_label | escape }}</span>
+          <span class="gift-banner__button-icon" aria-hidden="true">→</span>
+        </a>
+      {% endif %}
+
+      {% if section.settings.bottom_text != blank %}
+        <p class="gift-banner__bottom-text">{{ section.settings.bottom_text | escape }}</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .gift-banner {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    min-height: clamp(42rem, 72vh, 58rem);
+    background: #f5efe1;
+    color: #111111;
+  }
+
+  .gift-banner__media,
+  .gift-banner__overlay,
+  .gift-banner__background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .gift-banner__background {
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .gift-banner__overlay {
+    background:
+      linear-gradient(90deg, rgba(248, 241, 228, 0.88) 0%, rgba(248, 241, 228, 0.68) 36%, rgba(248, 241, 228, 0.14) 68%, rgba(248, 241, 228, 0.06) 100%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(17, 17, 17, 0.18) 100%);
+  }
+
+  .gift-banner__inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-height: inherit;
+    align-items: center;
+    padding-block: clamp(2rem, 5vw, 4.5rem);
+  }
+
+  .gift-banner__content {
+    width: min(100%, 42rem);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .gift-banner__logo-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  .gift-banner__logo {
+    display: block;
+    width: auto;
+    max-width: min(100%, 15rem);
+    height: auto;
+  }
+
+  .gift-banner__eyebrow,
+  .gift-banner__bottom-text {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .gift-banner__eyebrow {
+    color: rgba(17, 17, 17, 0.82);
+  }
+
+  .gift-banner__heading {
+    margin: 0;
+    font-size: clamp(2.6rem, 6vw, 5.5rem);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+
+  .gift-banner__description {
+    max-width: 34rem;
+    font-size: clamp(1rem, 1.2vw, 1.125rem);
+    line-height: 1.7;
+  }
+
+  .gift-banner__description > *:first-child {
+    margin-top: 0;
+  }
+
+  .gift-banner__description > *:last-child {
+    margin-bottom: 0;
+  }
+
+  .gift-banner__button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 3.25rem;
+    padding: 0.9rem 1.4rem;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid transparent;
+    text-decoration: none;
+    font-weight: 700;
+    line-height: 1;
+    transition:
+      transform 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .gift-banner__button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-102%);
+    transition: transform 220ms ease;
+    z-index: -1;
+  }
+
+  .gift-banner__button:hover,
+  .gift-banner__button:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .gift-banner__button:hover::before,
+  .gift-banner__button:focus-visible::before {
+    transform: translateX(0);
+  }
+
+  .gift-banner__button--top {
+    border-color: #111111;
+    background: rgba(255, 255, 255, 0.24);
+    color: #111111;
+  }
+
+  .gift-banner__button--top::before {
+    background: #111111;
+  }
+
+  .gift-banner__button--top:hover,
+  .gift-banner__button--top:focus-visible {
+    color: #ffffff;
+  }
+
+  .gift-banner__button--primary {
+    border-color: #f0c433;
+    background: #f0c433;
+    color: #111111;
+  }
+
+  .gift-banner__button--primary::before {
+    background: #111111;
+  }
+
+  .gift-banner__button--primary:hover,
+  .gift-banner__button--primary:focus-visible {
+    color: #ffffff;
+  }
+
+  .gift-banner__button-icon {
+    position: relative;
+    transition: transform 180ms ease;
+  }
+
+  .gift-banner__button:hover .gift-banner__button-icon,
+  .gift-banner__button:focus-visible .gift-banner__button-icon {
+    transform: translateX(0.2rem);
+  }
+
+  @media screen and (max-width: 749px) {
+    .gift-banner {
+      min-height: 100svh;
+    }
+
+    .gift-banner__overlay {
+      background:
+        linear-gradient(180deg, rgba(248, 241, 228, 0.88) 0%, rgba(248, 241, 228, 0.66) 44%, rgba(248, 241, 228, 0.14) 100%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(17, 17, 17, 0.18) 100%);
+    }
+
+    .gift-banner__inner {
+      align-items: flex-end;
+      padding-block: 1.5rem 2rem;
+    }
+
+    .gift-banner__content {
+      width: 100%;
+      gap: 0.875rem;
+    }
+
+    .gift-banner__logo {
+      max-width: 11rem;
+    }
+
+    .gift-banner__eyebrow,
+    .gift-banner__bottom-text {
+      font-size: 0.75rem;
+    }
+
+    .gift-banner__heading {
+      font-size: clamp(2.25rem, 11vw, 3.6rem);
+    }
+
+    .gift-banner__description {
+      max-width: 100%;
+      font-size: 0.975rem;
+    }
+
+    .gift-banner__button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "top_text",
+      "label": "Top text",
+      "default": "Limited Holiday Drop"
+    },
+    {
+      "type": "text",
+      "id": "top_button_label",
+      "label": "Top button text",
+      "default": "Gift guide"
+    },
+    {
+      "type": "url",
+      "id": "top_button_link",
+      "label": "Top button URL"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Find the perfect gift"
+    },
+    {
+      "type": "richtext",
+      "id": "description",
+      "label": "Description",
+      "default": "<p>Thoughtful gifts, curated for every kind of celebration.</p>"
+    },
+    {
+      "type": "text",
+      "id": "shop_button_label",
+      "label": "Shop button text",
+      "default": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "shop_button_link",
+      "label": "Shop button URL"
+    },
+    {
+      "type": "text",
+      "id": "bottom_text",
+      "label": "Bottom text",
+      "default": "Free shipping on orders over $50"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift banner"
+    }
+  ]
+}
+{% endschema %}

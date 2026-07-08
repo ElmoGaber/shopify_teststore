@@ -1,0 +1,16 @@
+{
+  "sections": {
+    "gift_banner": {
+      "type": "gift-banner",
+      "settings": {}
+    },
+    "gift_grid": {
+      "type": "gift-grid",
+      "settings": {}
+    }
+  },
+  "order": [
+    "gift_banner",
+    "gift_grid"
+  ]
+}

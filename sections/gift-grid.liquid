@@ -1,0 +1,701 @@
+{% liquid
+  assign image_widths = '360, 480, 640, 840, 960, 1200'
+  assign image_sizes = '(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw'
+%}
+
+<script src="{{ 'gift-grid.js' | asset_url }}" type="module" fetchpriority="low"></script>
+
+<gift-grid-component
+  class="gift-grid"
+  aria-labelledby="gift-grid-title-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  data-money-format="{{ shop.money_format | strip_html }}"
+  data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
+>
+  <div class="gift-grid__inner page-width">
+    <h2 id="gift-grid-title-{{ section.id }}" class="visually-hidden">Gift products</h2>
+
+    <ul class="gift-grid__list">
+      {% for block in section.blocks %}
+        {% liquid
+          assign product = block.settings.product
+          assign has_product = false
+          if product != blank
+            assign has_product = true
+          endif
+
+          assign selected_variant = blank
+          if has_product
+            assign selected_variant = product.selected_or_first_available_variant
+          endif
+
+          assign product_image = blank
+          if has_product and product.featured_media != blank
+            assign product_image = product.featured_media.preview_image
+          endif
+
+          assign product_title = 'Select a product'
+          if has_product
+            assign product_title = product.title
+          endif
+
+          assign product_price = blank
+          if has_product
+            assign product_price = product.price | money
+          endif
+
+          assign trigger_label = 'Open product details for ' | append: product_title
+        %}
+
+        <li
+          class="gift-grid__card{% unless has_product %} gift-grid__card--placeholder{% endunless %}"
+          {{ block.shopify_attributes }}
+          data-gift-grid-card
+          data-product-id="{{ product.id }}"
+          data-product-handle="{{ product.handle }}"
+          data-product-url="{{ product.url }}"
+        >
+          <div class="gift-grid__media">
+            {% if product_image != blank %}
+              {{
+                product_image
+                | image_url: width: 1200
+                | image_tag:
+                  widths: image_widths,
+                  sizes: image_sizes,
+                  class: 'gift-grid__image',
+                  alt: product_image.alt | default: product_title | escape,
+                  loading: 'lazy',
+                  decoding: 'async'
+              }}
+            {% else %}
+              {{ 'product-apparel-1' | placeholder_svg_tag: 'gift-grid__placeholder' }}
+            {% endif %}
+
+            <button
+              type="button"
+              class="gift-grid__trigger"
+              data-gift-grid-trigger
+              data-gift-grid-open
+              data-gift-grid-section-id="{{ section.id }}"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+              aria-controls="gift-grid-dialog-{{ section.id }}"
+              {% unless has_product %}disabled aria-disabled="true"{% endunless %}
+              aria-label="{{ trigger_label | escape }}"
+            >
+              <span class="gift-grid__trigger-icon" aria-hidden="true">
+                {{- 'icon-plus.svg' | inline_asset_content -}}
+              </span>
+            </button>
+          </div>
+
+          <div class="gift-grid__meta">
+            <h3 class="gift-grid__title">{{ product_title }}</h3>
+
+            {% if product_price != blank %}
+              <p class="gift-grid__price">{{ product_price }}</p>
+            {% else %}
+              <p class="gift-grid__price gift-grid__price--placeholder">—</p>
+            {% endif %}
+          </div>
+
+          <template data-gift-grid-template>
+            <div class="gift-grid-modal__panel" data-gift-grid-modal-panel>
+              <div class="gift-grid-modal__media">
+                {% if product_image != blank %}
+                  {{
+                    product_image
+                    | image_url: width: 1600
+                    | image_tag:
+                      widths: '640, 840, 1100, 1400, 1600',
+                      sizes: '(min-width: 990px) 48vw, 100vw',
+                      class: 'gift-grid-modal__image',
+                      alt: product_image.alt | default: product_title | escape,
+                      loading: 'eager',
+                      fetchpriority: 'high'
+                  }}
+                {% else %}
+                  {{ 'product-apparel-1' | placeholder_svg_tag: 'gift-grid-modal__placeholder' }}
+                {% endif %}
+              </div>
+
+              <div class="gift-grid-modal__body">
+                <div class="gift-grid-modal__heading-group">
+                  <h3 id="gift-grid-title-{{ section.id }}-{{ block.id }}" class="gift-grid-modal__title" data-gift-grid-modal-title>
+                    {{ product_title }}
+                  </h3>
+
+                  {% if product_price != blank %}
+                    <p class="gift-grid-modal__price" data-gift-grid-modal-price>{{ product_price }}</p>
+                  {% endif %}
+                </div>
+
+                {% if has_product and product.description != blank %}
+                  <div id="gift-grid-description-{{ section.id }}-{{ block.id }}" class="gift-grid-modal__description rte" data-gift-grid-modal-description>
+                    {{ product.description }}
+                  </div>
+                {% endif %}
+
+                <fieldset class="gift-grid-modal__variants" data-gift-grid-variant-group>
+                  <legend class="gift-grid-modal__legend">Variants</legend>
+                  <div class="gift-grid-modal__variant-list" role="radiogroup" aria-labelledby="gift-grid-title-{{ section.id }}-{{ block.id }}">
+                    {% for variant in product.variants %}
+                      <label class="gift-grid-modal__variant{% unless variant.available %} gift-grid-modal__variant--disabled{% endunless %}">
+                        <input
+                          class="gift-grid-modal__variant-input visually-hidden"
+                          type="radio"
+                          name="gift-grid-variant-{{ section.id }}-{{ block.id }}"
+                          value="{{ variant.id }}"
+                          data-gift-grid-variant-radio
+                          data-variant-id="{{ variant.id }}"
+                          data-variant-price="{{ variant.price }}"
+                          data-variant-available="{{ variant.available }}"
+                          {% if variant.featured_image != blank %}
+                            data-variant-image="{{ variant.featured_image | image_url: width: 1600 }}"
+                            data-variant-image-alt="{{ variant.featured_image.alt | default: variant.title | escape }}"
+                          {% endif %}
+                          {% if selected_variant != blank and selected_variant.id == variant.id %}checked{% endif %}
+                          {% unless variant.available %}disabled{% endunless %}
+                        >
+                        <span class="gift-grid-modal__variant-content">
+                          <span class="gift-grid-modal__variant-title">{{ variant.title }}</span>
+                          <span class="gift-grid-modal__variant-price">{{ variant.price | money }}</span>
+                        </span>
+                      </label>
+                    {% endfor %}
+                  </div>
+                </fieldset>
+
+                <div class="gift-grid-modal__actions">
+                  <button
+                    type="button"
+                    class="gift-grid-modal__add button"
+                    data-gift-grid-add
+                    {% unless selected_variant == blank or selected_variant.available %}disabled{% endunless %}
+                  >
+                    Add to cart
+                  </button>
+
+                  <p class="gift-grid-modal__status visually-hidden" aria-live="polite" role="status" data-gift-grid-status></p>
+                </div>
+              </div>
+            </div>
+          </template>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <dialog
+    id="gift-grid-dialog-{{ section.id }}"
+    class="gift-grid__dialog"
+    data-gift-grid-dialog
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="gift-grid-dialog-title-{{ section.id }}"
+    aria-describedby="gift-grid-dialog-description-{{ section.id }}"
+  >
+    <div class="gift-grid__dialog-surface">
+      <button
+        type="button"
+        class="gift-grid__dialog-close button button-unstyled"
+        data-gift-grid-close
+        aria-label="Close dialog"
+      >
+        {{- 'icon-close.svg' | inline_asset_content -}}
+      </button>
+
+      <div class="gift-grid__dialog-content" data-gift-grid-dialog-content></div>
+    </div>
+  </dialog>
+</gift-grid-component>
+
+{% stylesheet %}
+  .gift-grid-component,
+  gift-grid-component.gift-grid {
+    display: block;
+  }
+
+  .gift-grid {
+    position: relative;
+    padding-block: clamp(2rem, 4vw, 4rem);
+    background: #fbf7ef;
+    color: #141414;
+  }
+
+  .gift-grid__inner {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gift-grid__list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .gift-grid__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+
+  .gift-grid__media {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    background: #f0e6d5;
+    aspect-ratio: 1 / 1;
+  }
+
+  .gift-grid__image,
+  .gift-grid__placeholder,
+  .gift-grid-modal__image,
+  .gift-grid-modal__placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gift-grid__placeholder,
+  .gift-grid-modal__placeholder {
+    color: rgba(20, 20, 20, 0.18);
+  }
+
+  .gift-grid__trigger {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    color: #121212;
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    transform: translateY(0.35rem) scale(0.96);
+    transition:
+      opacity 180ms ease,
+      transform 180ms ease,
+      background-color 180ms ease,
+      color 180ms ease;
+  }
+
+  .gift-grid__trigger-icon {
+    width: 1rem;
+    height: 1rem;
+    display: inline-flex;
+  }
+
+  .gift-grid__trigger-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .gift-grid__card:hover .gift-grid__trigger,
+  .gift-grid__card:focus-within .gift-grid__trigger,
+  .gift-grid__trigger:focus-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .gift-grid__trigger:hover,
+  .gift-grid__trigger:focus-visible {
+    background: #121212;
+    color: #ffffff;
+  }
+
+  .gift-grid__trigger:focus-visible {
+    outline: 2px solid #121212;
+    outline-offset: 2px;
+  }
+
+  .gift-grid__trigger:disabled {
+    cursor: default;
+    opacity: 0.35;
+  }
+
+  .gift-grid__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-inline: 0.1rem;
+  }
+
+  .gift-grid__title,
+  .gift-grid__price {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .gift-grid__title {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .gift-grid__price {
+    font-size: 0.95rem;
+    color: rgba(20, 20, 20, 0.72);
+  }
+
+  .gift-grid__price--placeholder {
+    letter-spacing: 0.08em;
+  }
+
+  .gift-grid__card--placeholder .gift-grid__title,
+  .gift-grid__card--placeholder .gift-grid__price {
+    color: rgba(20, 20, 20, 0.45);
+  }
+
+  .gift-grid__dialog {
+    width: min(72rem, calc(100vw - 2rem));
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .gift-grid__dialog::backdrop {
+    background: rgba(16, 16, 16, 0.58);
+    backdrop-filter: blur(0.35rem);
+  }
+
+  .gift-grid__dialog-surface {
+    position: relative;
+    overflow: clip;
+    border-radius: 1.5rem;
+    background: #fffaf0;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.28);
+    max-height: calc(100svh - 2rem);
+  }
+
+  .gift-grid__dialog-content {
+    overflow: auto;
+    max-height: calc(100svh - 2rem);
+  }
+
+  .gift-grid__dialog-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 2;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #121212;
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.12);
+  }
+
+  .gift-grid__dialog-close svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .gift-grid-modal__panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    min-height: min(42rem, 82svh);
+  }
+
+  .gift-grid-modal__media {
+    position: relative;
+    min-height: 100%;
+    background: #f0e6d5;
+  }
+
+  .gift-grid-modal__image,
+  .gift-grid-modal__placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gift-grid-modal__body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: clamp(1.25rem, 2vw, 2rem);
+    overflow: auto;
+  }
+
+  .gift-grid-modal__heading-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-right: 3.5rem;
+  }
+
+  .gift-grid-modal__title,
+  .gift-grid-modal__price,
+  .gift-grid-modal__legend {
+    margin: 0;
+  }
+
+  .gift-grid-modal__title {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+
+  .gift-grid-modal__price {
+    font-size: 1.05rem;
+    color: rgba(20, 20, 20, 0.72);
+  }
+
+  .gift-grid-modal__description {
+    font-size: 0.98rem;
+    line-height: 1.65;
+    color: rgba(20, 20, 20, 0.84);
+  }
+
+  .gift-grid-modal__description > *:first-child {
+    margin-top: 0;
+  }
+
+  .gift-grid-modal__description > *:last-child {
+    margin-bottom: 0;
+  }
+
+  .gift-grid-modal__variants {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .gift-grid-modal__legend {
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .gift-grid-modal__variant-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .gift-grid-modal__variant {
+    position: relative;
+  }
+
+  .gift-grid-modal__variant-input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .gift-grid-modal__variant-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 4rem;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid rgba(20, 20, 20, 0.16);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.76);
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease,
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .gift-grid-modal__variant-input:checked + .gift-grid-modal__variant-content {
+    border-color: #121212;
+    background: #ffffff;
+    box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.08);
+  }
+
+  .gift-grid-modal__variant-input:focus-visible + .gift-grid-modal__variant-content {
+    outline: 2px solid #121212;
+    outline-offset: 2px;
+  }
+
+  .gift-grid-modal__variant--disabled .gift-grid-modal__variant-content {
+    opacity: 0.45;
+  }
+
+  .gift-grid-modal__variant-title,
+  .gift-grid-modal__variant-price {
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .gift-grid-modal__variant-title {
+    font-weight: 600;
+  }
+
+  .gift-grid-modal__variant-price {
+    color: rgba(20, 20, 20, 0.7);
+  }
+
+  .gift-grid-modal__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: auto;
+  }
+
+  .gift-grid-modal__add {
+    width: 100%;
+    min-height: 3.25rem;
+    border: 1px solid #121212;
+    border-radius: 999px;
+    background: #121212;
+    color: #ffffff;
+    font-weight: 700;
+    transition:
+      transform 180ms ease,
+      background-color 180ms ease,
+      color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .gift-grid-modal__add:hover,
+  .gift-grid-modal__add:focus-visible {
+    transform: translateY(-1px);
+    background: #000000;
+  }
+
+  .gift-grid-modal__add:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+  }
+
+  @media (hover: none) {
+    .gift-grid__trigger {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media screen and (max-width: 989px) {
+    .gift-grid__list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .gift-grid {
+      padding-block: 1.5rem 2.25rem;
+    }
+
+    .gift-grid__list {
+      gap: 1rem;
+    }
+
+    .gift-grid__media {
+      border-radius: 1rem;
+    }
+
+    .gift-grid__trigger {
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .gift-grid__title,
+    .gift-grid__price {
+      font-size: 0.95rem;
+    }
+
+    .gift-grid__dialog {
+      width: calc(100vw - 1rem);
+    }
+
+    .gift-grid__dialog-surface {
+      border-radius: 1.15rem;
+      max-height: calc(100svh - 1rem);
+    }
+
+    .gift-grid__dialog-content {
+      max-height: calc(100svh - 1rem);
+    }
+
+    .gift-grid-modal__panel {
+      grid-template-columns: 1fr;
+      min-height: auto;
+    }
+
+    .gift-grid-modal__media {
+      aspect-ratio: 1 / 1;
+    }
+
+    .gift-grid-modal__body {
+      gap: 0.875rem;
+      padding: 1rem;
+    }
+
+    .gift-grid-modal__heading-group {
+      padding-right: 3rem;
+    }
+
+    .gift-grid-modal__variant-list {
+      grid-template-columns: 1fr;
+    }
+
+    .gift-grid-modal__variant-content {
+      min-height: 3.6rem;
+    }
+
+    .gift-grid__dialog-close {
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift grid",
+  "class": "gift-grid-section",
+  "max_blocks": 6,
+  "blocks": [
+    {
+      "type": "gift_product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift grid",
+      "blocks": [
+        { "type": "gift_product" },
+        { "type": "gift_product" },
+        { "type": "gift_product" },
+        { "type": "gift_product" },
+        { "type": "gift_product" },
+        { "type": "gift_product" }
+      ]
+    }
+  ]
+}
+{% endschema %}
