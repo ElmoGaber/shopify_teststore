@@ -70,4 +70,4 @@ templates/
 Momen Tarek Gabr
 
 GitHub:
-https://github.com/YOUR_USERNAME/YOUR_REPOSITORY
+https://github.com/ElmoGaber/shopify_teststore
