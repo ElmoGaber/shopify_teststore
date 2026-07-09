@@ -1,6 +1,6 @@
 # Shopify Assessment – EcomExperts
 
-A pixel-perfect implementation of the EcomExperts Shopify Developer Hiring Assessment using Shopify Online Store 2.0.
+A pixel-perfect implementation of the EcomExperts Shopify Developer Assessment using Shopify Online Store 2.0.
 
 ## Overview
 
